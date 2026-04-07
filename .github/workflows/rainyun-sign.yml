@@ -2,7 +2,7 @@ name: Rainyun 自动签到
 
 on:
   schedule:
-    - cron: '0 2 * * *'  # UTC+8 12点执行
+    - cron: '0 1 * * *'  # UTC+8 9点执行
   workflow_dispatch:  # 允许手动触发
 
 jobs:
