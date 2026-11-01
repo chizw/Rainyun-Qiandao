@@ -791,24 +791,30 @@ def run_all_accounts():
             final_status = "成功" if results[username]['result'] and results[username]['result']['status'] else "失败"
             logger.info(f"  - {masked_user}: 重试 {count} 次, 最终{final_status}")
     
+    failed_count = len(accounts) - success_count
+    notify_only_failure = os.getenv("NOTIFY_ONLY_FAILURE", "false").lower() == "true"
+    
     if accounts:
-        try:
-            import notify
-            logger.info("正在发送通知...")
-            
-            notification_title = f"雨云签到: {success_count}/{len(accounts)} 成功"
-            notification_content = f"雨云自动签到结果汇总：\n\n总账户数: {len(accounts)}\n成功账户数: {success_count}\n失败账户数: {len(accounts) - success_count}\n\n详细结果：\n"
-            
-            for i, result in enumerate(final_results, 1):
-                if result:
-                    if result['status']:
-                        notification_content += f"\n{i}. {result['username']}: ✅ 成功 - 积分 {result['points']}"
-                    else:
-                        notification_content += f"\n{i}. {result['username']}: ❌ 失败 - {result['msg']}"
-            
-            notify.send(notification_title, notification_content)
-        except Exception as e:
-            logger.warning(f"发送通知失败: {e}")
+        if notify_only_failure and failed_count == 0:
+            logger.info("所有账号签到成功，跳过推送通知（NOTIFY_ONLY_FAILURE=true）")
+        else:
+            try:
+                import notify
+                logger.info("正在发送通知...")
+                
+                notification_title = f"雨云签到: {success_count}/{len(accounts)} 成功"
+                notification_content = f"雨云自动签到结果汇总：\n\n总账户数: {len(accounts)}\n成功账户数: {success_count}\n失败账户数: {failed_count}\n\n详细结果：\n"
+                
+                for i, result in enumerate(final_results, 1):
+                    if result:
+                        if result['status']:
+                            notification_content += f"\n{i}. {result['username']}: ✅ 成功 - 积分 {result['points']}"
+                        else:
+                            notification_content += f"\n{i}. {result['username']}: ❌ 失败 - {result['msg']}"
+                
+                notify.send(notification_title, notification_content)
+            except Exception as e:
+                logger.warning(f"发送通知失败: {e}")
     
     logger.info("任务完成，执行最终清理...")
     cleanup_zombie_processes()
